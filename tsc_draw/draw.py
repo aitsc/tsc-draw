@@ -20,7 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class Draw:
-    def __init__(self, length=10, width=10, r=1, c=1, wspace=None, num=None):
+    def __init__(self, length=10, width=10, r=1, c=1, wspace=None, num=None, chinese=False):
         '''
         :param length: float; 图片的长度, 单位一般是100像素
         :param width: float; 图片的宽度/高度, 单位一般是100像素
@@ -28,8 +28,14 @@ class Draw:
         :param c: int; 几列
         :param wspace: None or float; 子图之间的距离, 0.4表示为子图宽度的40%
         :param num: None or int or str; fig的名称, 防止有时重合
+        :param chinese: bool; 是否使用中文字体, 可能导致英文不好看. 需要先加载字体, 比如对于anaconda需要
+            cp SimHei.ttf ~/anaconda3/lib/python3.*/site-packages/matplotlib/mpl-data/fonts/ttf/SimHei.ttf
+            rm ~/.cache/matplotlib
         :return:
         '''
+        if chinese:
+            plt.rcParams['font.sans-serif'] = ['SimHei']
+            plt.rcParams['axes.unicode_minus'] = False
         self.fig = plt.figure(num=num, figsize=(length, width))
         self.r = r
         self.c = c
@@ -306,12 +312,13 @@ class Draw:
         for tick in ax.zaxis.get_major_ticks():
             tick.label.set_fontsize(ztick_fs)
 
-    def add_violin(self, all_data, xaxis_name, xlabel_name=None, ylabel_name=None, ygrid_alpha=0.4, title=None,
-                   diff_color=True, violin_width=0.7, violin_alpha=0.2, n=None, x_rotation=None):
+    def add_violin(self, all_data, xaxis_name, xlabel_name=None, ylabel_name=None, ygrid_alpha=0.2, title=None,
+                   diff_color=True, violin_width=0.7, violin_alpha=0.2, n=None, x_rotation=None, vert=True,
+                   show_stat=True, x_top=False, yaxis_name=None, yaxis_name_y=None):
         '''
         增加一个小提琴图绘制
         :param all_data: [[数据1值1,..],..]; 二维列表, 每行一个数据
-        :param xaxis_name: [名称1,..]; 每个数据的名称
+        :param xaxis_name: [名称1,..]; 每个数据的名称, 长度=len(all_data)
         :param xlabel_name: str or None; x轴坐标名称
         :param ylabel_name: str or None; y轴坐标名称
         :param ygrid_alpha: float; y轴网格的不透明度
@@ -321,11 +328,17 @@ class Draw:
         :param violin_alpha: float; violin的不透明度
         :param n: None or int; 第几个图, 从1开始, 先行后列. None表示自动
         :param x_rotation: None or float; x轴标签名称逆时针旋转度数, None表示不旋转
+        :param vert: bool; 是否竖着画小提琴, 否则横着(xy轴对换)
+        :param show_stat: bool; 是否显示统计值和图例, 比如cmeans/cmins/cmaxes/cmedians
+        :param x_top: bool; 是否将x轴移动到上方
+        :param yaxis_name: [名称1,..]; y轴值的名称
+        :param yaxis_name_y: [值,..]; y轴值的名称对应的哪个值
         :return:
         '''
         # 初始化
         axes = self._get_ax(n)
-        violin_parts = axes.violinplot(all_data, showmeans=True, showmedians=True, widths=violin_width)
+        violin_parts = axes.violinplot(all_data, showmeans=show_stat, showextrema=show_stat,
+                                       showmedians=show_stat, widths=violin_width, vert=vert)
         # 每个图设置不同颜色
         nc = self.ncolors(len(all_data))
         for i, pc in enumerate(violin_parts['bodies']):
@@ -333,31 +346,55 @@ class Draw:
                 pc.set_facecolor(nc[i])  # 中间颜色
                 pc.set_edgecolor('black')  # 边界颜色
             pc.set_alpha(violin_alpha)  # 透明度
-        # violinplot 横线颜色
-        violin_parts['cmeans'].set_color(['red'] * len(all_data))
-        violin_parts['cmins'].set_color(['green'] * len(all_data))
-        violin_parts['cmaxes'].set_color(['black'] * len(all_data))
-        violin_parts['cmedians'].set_color(['blue'] * len(all_data))
-        # violinplot 图例
-        violin_parts['cmeans'].set_label('Mean')
-        violin_parts['cmins'].set_label('Min')
-        violin_parts['cmaxes'].set_label('Max')
-        violin_parts['cmedians'].set_label('Median')
+        if show_stat:
+            # violinplot 横线颜色
+            violin_parts['cmeans'].set_color(['red'] * len(all_data))
+            violin_parts['cmins'].set_color(['green'] * len(all_data))
+            violin_parts['cmaxes'].set_color(['black'] * len(all_data))
+            violin_parts['cmedians'].set_color(['blue'] * len(all_data))
+            # violinplot 图例
+            violin_parts['cmeans'].set_label('Mean')
+            violin_parts['cmins'].set_label('Min')
+            violin_parts['cmaxes'].set_label('Max')
+            violin_parts['cmedians'].set_label('Median')
         # 参数设置
         if title:  # 标题
             axes.set_title(title)
         if 0 < ygrid_alpha <= 1:  # 网格设置
-            axes.yaxis.grid(True, alpha=ygrid_alpha)
+            if vert:
+                axes.yaxis.grid(True, alpha=ygrid_alpha)
+            else:
+                axes.xaxis.grid(True, alpha=ygrid_alpha)
         if xlabel_name:  # 横坐标设置
-            axes.set_xlabel(xlabel_name)
+            if vert:
+                axes.set_xlabel(xlabel_name)
+            else:
+                axes.set_ylabel(xlabel_name)
         if ylabel_name:  # 纵坐标设置
-            axes.set_ylabel(ylabel_name)
-        plt.setp(axes, xticks=range(1, len(all_data) + 1), xticklabels=xaxis_name)  # 横坐标图名称
+            if vert:
+                axes.set_ylabel(ylabel_name)
+            else:
+                axes.set_xlabel(ylabel_name)
+        if x_top:
+            axes.xaxis.set_label_position('top')
+            axes.xaxis.set_ticks_position('top')
+        if vert:
+            plt.setp(axes, xticks=range(1, len(all_data) + 1), xticklabels=xaxis_name)  # 横坐标图名称
+            if yaxis_name_y != yaxis_name != None:
+                plt.setp(axes, yticks=yaxis_name_y, yticklabels=yaxis_name)
+        else:
+            plt.setp(axes, yticks=range(1, len(all_data) + 1), yticklabels=xaxis_name)  # 纵坐标图名称
+            if yaxis_name_y != yaxis_name != None:
+                plt.setp(axes, xticks=yaxis_name_y, xticklabels=yaxis_name)
         if x_rotation:
             plt.setp(axes.get_xticklabels(), rotation=x_rotation, horizontalalignment='right')
         if diff_color:
-            [t.set_color(i) for (i, t) in zip(nc, axes.xaxis.get_ticklabels())]
-        axes.legend(loc='best', labelspacing=0.)  # 图例
+            if vert:
+                [t.set_color(i) for (i, t) in zip(nc, axes.xaxis.get_ticklabels())]
+            else:
+                [t.set_color(i) for (i, t) in zip(nc, axes.yaxis.get_ticklabels())]
+        if show_stat:
+            axes.legend(loc='best', labelspacing=0.)  # 图例
 
     def add_line(self, x, xticks=None, xaxis: str = None, xlim: list = None, title: str = None, ylabel_display=True,
                  y_left: list = None, yaxis_left: str = None, ylim_left: list = None, ylabel_left: list = None,
@@ -427,7 +464,7 @@ class Draw:
         mfc = ['None'] * len(markers)  # 点的中间颜色, 数量与markers相等
         # 全图配置
         text_obj = Text()
-        get_text_w = lambda t: self.get_text_width(t, self.fig, text_obj)  # 获取字符像素宽度
+        def get_text_w(t): return self.get_text_width(t, self.fig, text_obj)  # 获取字符像素宽度
         ax_left = self._get_ax(n)
         all_polt = []  # 所有图, 用于绘制图例
         # 左右坐标 配置信息
@@ -643,9 +680,9 @@ class Draw:
                 print(i, '=', j)
             '''
             xlim_left = (al * x_max + ar * x_min - length * x_min + ml * x_max + mr * x_min + tl * x_max + tr * x_min) \
-                        / (al + ar - length + ml + mr + tl + tr)
+                / (al + ar - length + ml + mr + tl + tr)
             xlim_right = (al * x_max + ar * x_min - length * x_max + ml * x_max + mr * x_min + tl * x_max + tr * x_min) \
-                         / (al + ar - length + ml + mr + tl + tr)
+                / (al + ar - length + ml + mr + tl + tr)
             xtext_right = (-ar * xlim_left + ar * xlim_right + length * x_max) / length
             xtext_left = (al * xlim_left - al * xlim_right + length * x_min + tl * xlim_left - tl * xlim_right) / length
             xlim = [xlim_left, xlim_right]  # x轴约束
@@ -851,7 +888,7 @@ class Draw:
         k = len(x_no)  # 算法个数
         N = len(x_no[0])  # 数据集个数
         # 临界值域
-        get_CD_f = lambda α: qsturng(p=1 - α, r=k, v=float('inf')) / 2 ** 0.5 * (k * (k + 1) / (6 * N)) ** 0.5
+        def get_CD_f(α): return qsturng(p=1 - α, r=k, v=float('inf')) / 2 ** 0.5 * (k * (k + 1) / (6 * N)) ** 0.5
         CD = get_CD_f(alpha)
         # Friedman test
         τχ2 = 12 * N / (k * (k + 1)) * (sum(i[0] ** 2 for i in x_avgno_tick_L) - k * (k + 1) ** 2 / 4)
@@ -1073,7 +1110,7 @@ class Draw:
 if __name__ == '__main__':
     r = 3
     c = 3
-    draw = Draw(length=c * 5, width=r * 5, r=r, c=c)
+    draw = Draw(length=c * 5, width=r * 5, r=r, c=c, chinese=False)
     # 字体宽度测试
     print('计算字体宽度...')
     t = ['A', 'a', '1', '-', '#', '.', '%', '(', '$A$']
@@ -1096,12 +1133,17 @@ if __name__ == '__main__':
     draw.add_3d(xyz_L, sub_title='3d', xyz_scatter=(np.random.rand(4, 11, 3) * 2).tolist(),
                 scatter_labels=['11', '22', '33', '44'], scatter_marker=None, xyz_ticks=(True, True, False))
     # 小提琴图
-    all_data1 = np.random.normal(-1, 1, size=[7, 6]).tolist()
+    all_data1 = np.random.normal(-1, 1, size=[7, 12]).tolist()
+    all_data1[0] = all_data1[0][:2]  # 部分数据
     xaxis_name = [f'x{i}' for i in range(7)]
-    draw.add_violin(all_data1, xaxis_name, title='violin', x_rotation=45)
+    draw.add_violin(all_data1, xaxis_name, title='violin', x_rotation=45, xlabel_name='x', ylabel_name='y', vert=False,
+                    show_stat=False, x_top=True,
+                    # yaxis_name=['3', '2', '1', '零', '-1', -2, '-3'],
+                    # yaxis_name_y=[3, 2, 1, 0, -1, -2, -3]
+                    )
     # 双轴标记折线图
     x = [i * 20 for i in range(5)][::-1]
-    y = lambda n, m: [[random.uniform(400, m) for i in x] for j in range(n)]
+    def y(n, m): return [[random.uniform(400, m) for i in x] for j in range(n)]
     y_left = y(4, m=2)
     y_right = y(1, m=40)
     draw.add_line(

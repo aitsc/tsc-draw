@@ -5,7 +5,7 @@ import os
 if os.path.exists('readme.md'):
     long_description = open('readme.md', 'r', encoding='utf8').read()
 else:
-    long_description = '开源: https://github.com/aitsc/tsc-draw'
+    long_description = '代码: https://github.com/aitsc/tsc-draw'
 
 setup(
     name='tsc-draw',
