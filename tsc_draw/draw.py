@@ -29,13 +29,14 @@ class Draw:
         :param wspace: None or float; 子图之间的距离, 0.4表示为子图宽度的40%
         :param num: None or int or str; fig的名称, 防止有时重合
         :param chinese: bool; 是否使用中文字体, 可能导致英文不好看. 需要先加载字体, 比如对于anaconda需要
-            cp SimHei.ttf ${$(which python)%bin*}lib/python*/site-packages/matplotlib/mpl-data/fonts/ttf/SimHei.ttf
-            rm ~/.cache/matplotlib
+            wget https://github.com/aitsc/tsc-draw/blob/master/tsc_draw/SimHei.ttf
+            mv SimHei.ttf ${$(which python)%bin*}lib/python*/site-packages/matplotlib/mpl-data/fonts/ttf/
+            rm -r ~/.cache/matplotlib
         :return:
         '''
         if chinese:
             plt.rcParams['font.sans-serif'] = ['SimHei']
-            plt.rcParams['axes.unicode_minus'] = False
+            plt.rcParams['axes.unicode_minus'] = False  # 防止负号变框
         self.fig = plt.figure(num=num, figsize=(length, width))
         self.r = r
         self.c = c
@@ -314,7 +315,7 @@ class Draw:
 
     def add_violin(self, all_data, xaxis_name, xlabel_name=None, ylabel_name=None, ygrid_alpha=0.2, title=None,
                    diff_color=True, violin_width=0.7, violin_alpha=0.2, n=None, x_rotation=None, vert=True,
-                   show_stat=True, x_top=False, yaxis_name=None, yaxis_name_y=None):
+                   show_stat=True, x_top=False, yaxis_name=None, yaxis_name_y=None, edgecolor=None):
         '''
         增加一个小提琴图绘制
         :param all_data: [[数据1值1,..],..]; 二维列表, 每行一个数据
@@ -333,6 +334,7 @@ class Draw:
         :param x_top: bool; 是否将x轴移动到上方
         :param yaxis_name: [名称1,..]; y轴值的名称
         :param yaxis_name_y: [值,..]; y轴值的名称对应的哪个值
+        :param edgecolor: None or str; 小提琴的边界颜色, None表示和中间颜色相同, 'black' 表示黑色
         :return:
         '''
         # 初始化
@@ -344,7 +346,8 @@ class Draw:
         for i, pc in enumerate(violin_parts['bodies']):
             if diff_color:
                 pc.set_facecolor(nc[i])  # 中间颜色
-                pc.set_edgecolor('black')  # 边界颜色
+                if edgecolor:
+                    pc.set_edgecolor(edgecolor)  # 边界颜色
             pc.set_alpha(violin_alpha)  # 透明度
         if show_stat:
             # violinplot 横线颜色
@@ -1108,9 +1111,8 @@ class Draw:
 
 
 if __name__ == '__main__':
-    r = 3
-    c = 3
-    draw = Draw(length=c * 5, width=r * 5, r=r, c=c, chinese=False)
+    r, c = 3, 3
+    draw = Draw(length=c * 5, width=r * 5, r=r, c=c, chinese=True)
     # 字体宽度测试
     print('计算字体宽度...')
     t = ['A', 'a', '1', '-', '#', '.', '%', '(', '$A$']
@@ -1137,10 +1139,8 @@ if __name__ == '__main__':
     all_data1[0] = all_data1[0][:2]  # 部分数据
     xaxis_name = [f'x{i}' for i in range(7)]
     draw.add_violin(all_data1, xaxis_name, title='violin', x_rotation=45, xlabel_name='x', ylabel_name='y', vert=False,
-                    show_stat=False, x_top=True,
-                    # yaxis_name=['3', '2', '1', '零', '-1', -2, '-3'],
-                    # yaxis_name_y=[3, 2, 1, 0, -1, -2, -3]
-                    )
+                    show_stat=False, x_top=True, yaxis_name=['3', '2', '1', '零', '-1', -2, '-3'],
+                    yaxis_name_y=[3, 2, 1, 0, -1, -2, -3])
     # 双轴标记折线图
     x = [i * 20 for i in range(5)][::-1]
     def y(n, m): return [[random.uniform(400, m) for i in x] for j in range(n)]
@@ -1163,7 +1163,7 @@ if __name__ == '__main__':
     # 热力图
     vegetables = ["cucumber", "tomato", "lettuce", "asparagus", "potato", "wheat", "barley"]
     farmers = list('ABCDEFGH')
-    harvest = np.random.rand(7, 8)
+    harvest = -np.random.rand(7, 8)
     draw.add_heatmap(harvest, farmers, vegetables, mat_text=2, sub_title='heatmap', x_rotation=90)
     # 散点图
     draw.add_scatter((np.random.rand(4, 30, 3) * 2).tolist(), scatter_labels=['11', '22', '33', '44'],
