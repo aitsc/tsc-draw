@@ -29,7 +29,7 @@ class Draw:
         :param wspace: None or float; 子图之间的距离, 0.4表示为子图宽度的40%
         :param num: None or int or str; fig的名称, 防止有时重合
         :param chinese: bool; 是否使用中文字体, 可能导致英文不好看. 需要先加载字体, 比如对于anaconda需要
-            cp SimHei.ttf ~/anaconda3/lib/python3.*/site-packages/matplotlib/mpl-data/fonts/ttf/SimHei.ttf
+            cp SimHei.ttf ${$(which python)%bin*}lib/python*/site-packages/matplotlib/mpl-data/fonts/ttf/SimHei.ttf
             rm ~/.cache/matplotlib
         :return:
         '''
