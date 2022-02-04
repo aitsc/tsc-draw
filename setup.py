@@ -9,7 +9,7 @@ else:
 
 setup(
     name='tsc-draw',
-    version='0.5',
+    version='0.6',
     description="绘图",
     long_description=long_description,
     long_description_content_type="text/markdown",
