@@ -315,7 +315,7 @@ class Draw:
 
     def add_violin(self, all_data, xaxis_name, xlabel_name=None, ylabel_name=None, ygrid_alpha=0.2, title=None,
                    diff_color=True, violin_width=0.7, violin_alpha=0.2, n=None, x_rotation=None, vert=True,
-                   show_stat=True, x_top=False, yaxis_name=None, yaxis_name_y=None, edgecolor=None):
+                   show_stat=True, x_top=False, yaxis_name=None, yaxis_name_y=None, edgecolor=None, expan_point=0):
         '''
         增加一个小提琴图绘制
         :param all_data: [[数据1值1,..],..]; 二维列表, 每行一个数据
@@ -335,10 +335,21 @@ class Draw:
         :param yaxis_name: [名称1,..]; y轴值的名称
         :param yaxis_name_y: [值,..]; y轴值的名称对应的哪个值
         :param edgecolor: None or str; 小提琴的边界颜色, None表示和中间颜色相同, 'black' 表示黑色
+        :param expan_point: int; 如果大于0则把 all_data 中的值当作出现次数来展开, 而不是数据点
+            最大出现次数限制会在 10**expan_point 至 10**(expan_point+1) 之间, 通过缩放实现
+            太大会导致次数展开占内存过多, 也没有意义(因为最大和最小值差太多很难在图片中看出来了), 3在1万以内足以
+            需要 all_data 中的每个list长度都相等, 不能有负数, list中第一个值展开为0的次数, 依次进行展开
+            例如: [[2,3],[0,1]]=[[0,0,1,1,1],[1]]
         :return:
         '''
         # 初始化
         axes = self._get_ax(n)
+        if expan_point > 0:
+            # 把 all_data 中的 数据1值1 当作出现次数来展开
+            for i in range(len(all_data)):
+                peak_v = max([abs(j) for j in all_data[i] if j != 0])  # 最大值
+                scale = 10**(int(str('%e' % peak_v).split('e')[1])-expan_point)  # 缩小倍数
+                all_data[i] = sum([int(k/scale)*[j] for j, k in enumerate(all_data[i])], [])
         violin_parts = axes.violinplot(all_data, showmeans=show_stat, showextrema=show_stat,
                                        showmedians=show_stat, widths=violin_width, vert=vert)
         # 每个图设置不同颜色
