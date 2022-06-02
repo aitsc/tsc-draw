@@ -851,7 +851,7 @@ class Draw:
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
-    def add_Ftest(self, x, yticks, alpha=0.05, asc=False, x_sort=True, color=None, sub_title='', sub_title_fs=None,
+    def add_Ftest(self, x, yticks, alpha=0.05, asc=False, x_sort=True, colors=None, sub_title='', sub_title_fs=None,
                   xlabel=None, ylabel=None, lw=2, n=None, p_vaule_f=lambda t, p: t.replace('{p}', str(round(p, 4))),
                   legend_fs=None, xlabel_fs=None, ylabel_fs=None, xtick_fs=None, ytick_fs=None):
         """
@@ -861,7 +861,8 @@ class Draw:
         :param alpha: float; 显著性水平
         :param asc: bool or [bool,..]; 结果是顺序还是倒叙, list时bool的数量等于每个方法的结果数量. True 表示x中值越小越好
         :param x_sort: bool; 是否按平均序值给方法排序
-        :param color: None or str; 是否固定临界值域线段的颜色, None表示自动选择不同的颜色, str表示选择固定的颜色
+        :param colors: None or str or list; 是否固定临界值域线段的颜色, None表示自动选择不同的颜色, str表示选择固定的颜色
+            list表示每个方法依次使用的颜色, 要大于len(yticks), 会随着x_sort一起排序防止不同图的相同方法出现不同颜色
         :param sub_title: str; 这个子图的标题
         :param sub_title_fs: None or int; 这个子图的标题的字体大小, None默认
         :param xlabel: str or None; x轴名, None表示无
@@ -884,6 +885,12 @@ class Draw:
         assert len(x) == len(yticks), f'len(x)!=len(yticks) : {len(x)}!={len(yticks)}'
         ax = self._get_ax(n)
         x_no = [[] for i in range(len(x))]  # [[排名1,..],..]
+        # 颜色提前处理配合 x_sort
+        if colors:
+            nc_L = [colors] * len(x) if isinstance(colors, str) else colors[:len(x)]
+            assert len(nc_L) == len(x), f'len(x)!=len(colors) : {len(x)}!={len(colors)}'
+        else:
+            nc_L = self.ncolors(len(x))
         # 计算算法比较序值
         for n in range(len(x[0])):  # 对于每个数据集
             xi_res_asc_L = [[i, xi[n], 1 if asc[n] else -1] for i, xi in enumerate(x)]
@@ -907,7 +914,7 @@ class Draw:
         # 平均序值+标签  [(平均序值,y轴标记),..]
         x_avgno_tick_L = [(sum(i) / len(i), j) for i, j in zip(x_no, yticks)]
         if x_sort:
-            x_avgno_tick_L = sorted(x_avgno_tick_L, key=lambda t: t[0])
+            x_avgno_tick_L, nc_L = list(zip(*sorted(zip(x_avgno_tick_L, nc_L), key=lambda t: t[0][0])))
         k = len(x_no)  # 算法个数
         N = len(x_no[0])  # 数据集个数
         # 临界值域
@@ -918,10 +925,6 @@ class Draw:
         τF = (N - 1) * τχ2 / (N * (k - 1) - τχ2)
         p_value = 1 - stats.f.cdf(τF, k, N)  # 所有算法性能相同的概率
         # 绘图
-        if color:
-            nc_L = [color] * len(x_avgno_tick_L)
-        else:
-            nc_L = self.ncolors(len(x_avgno_tick_L))
         yticks = list(range(len(x_avgno_tick_L), 0, -1))
         yticklabels = []
         # [[[x坐标,..],[y坐标,..],label,marker],..]
@@ -1196,6 +1199,7 @@ if __name__ == '__main__':
         [1, 1, 1, 1],
     ], yticks=['B', 'C', 'A'], xlabel='Rank', alpha=alpha, asc=True,
         sub_title='Friedman test: $p$-value={p}\nTwo-tailed Nemenyi post-hoc test: $\\alpha$=' + str(alpha),
+        colors=draw.ncolors(5), x_sort=True
     ))
     print('已绘图过的编号n:', draw.already_drawn)
     draw.draw('test_draw_utils.pdf')
