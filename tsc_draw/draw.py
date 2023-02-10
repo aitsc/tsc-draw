@@ -419,7 +419,8 @@ class Draw:
         if show_stat:
             axes.legend(loc='best', labelspacing=0.)  # 图例
 
-    def add_line(self, x, xticks=None, xaxis: str = None, xlim: list = None, title: str = None, ylabel_display=True,
+    def add_line(self, x, xticks=None, xticks_num=None, xaxis: str = None, xlim: list = None, title: str = None, 
+                 ylabel_display=True,
                  y_left: list = None, yaxis_left: str = None, ylim_left: list = None, ylabel_left: list = None,
                  y_right: list = None, yaxis_right: str = None, ylim_right: list = None,
                  ylabel_right: list = None,
@@ -436,9 +437,10 @@ class Draw:
             - 空出图例的位置 可能需要修改 标签的长度/label_len
         :param x: [float,..]; x轴坐标, 一维列表, 所有折线共用, 必选
         :param xticks: ['x第一个标记',..] or None; x轴每个值用str替换, None表示不替换
+        :param xticks_num: int or None; x轴显示刻度的数量, None则全部显示
         :param xaxis: str or None; x轴的名字
         :param xlim: [left,right] or None; x轴的左右限制
-        :param title:  str or None; 标题
+        :param title: str or None; 标题
         :param x_rotation: None or float; x轴标签名称逆时针旋转度数, None表示不旋转
 
         :param y_left: [[..],..] or None; 左y轴坐标, 二维列表, 必选
@@ -740,10 +742,18 @@ class Draw:
             labs = [l.get_label() for l in all_polt]
             ax_left.legend(all_polt, labs, loc='best', labelspacing=0.)
         # 刻度
+        if xticks_num:
+            xticks_index = [min(round(i / xticks_num * len(x)), len(x) - 1) for i in range(xticks_num)]
         if xticks:
-            plt.setp(ax_left, xticks=x, xticklabels=xticks)
+            if xticks_num:
+                plt.setp(ax_left, xticks=[x[i] for i in xticks_index], xticklabels=[xticks[i] for i in xticks_index])
+            else:
+                plt.setp(ax_left, xticks=x, xticklabels=xticks)
         else:
-            ax_left.set_xticks(x)  # 每个刻度都显示
+            if xticks_num:
+                ax_left.set_xticks([x[i] for i in xticks_index])
+            else:
+                ax_left.set_xticks(x)  # 每个刻度都显示
         if x_rotation:
             plt.setp(ax_left.get_xticklabels(), rotation=x_rotation, horizontalalignment='right')
         # 网格
@@ -1181,7 +1191,7 @@ if __name__ == '__main__':
         annotate=True,
         annotate_in_left=True, annotate_color=True, legend_right=True,
         xl_text_margin=0.1, xl_arrow_len=0.9, xr_text_margin=0.05, xr_arrow_len=0.5, custom_dpi=90,
-        x_rotation=90, xticks=[f'x{i}' for i in x]
+        x_rotation=90, xticks=[f'x{i}' for i in x], xticks_num=3,
     )
     # 热力图
     vegetables = ["cucumber", "tomato", "lettuce", "asparagus", "potato", "wheat", "barley"]
