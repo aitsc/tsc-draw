@@ -29,8 +29,9 @@ class Draw:
         :param wspace: None or float; 子图之间的距离, 0.4表示为子图宽度的40%
         :param num: None or int or str; fig的名称, 防止有时重合
         :param chinese: bool; 是否使用中文字体, 可能导致英文不好看. 需要先加载字体, 比如对于anaconda需要
-            wget https://github.com/aitsc/tsc-draw/blob/master/tsc_draw/SimHei.ttf
-            mv SimHei.ttf ${$(which python)%bin*}lib/python*/site-packages/matplotlib/mpl-data/fonts/ttf/
+            wget https://raw.githubusercontent.com/aitsc/tsc-draw/refs/heads/master/tsc_draw/SimHei.ttf
+            zsh: mv SimHei.ttf $(dirname $(dirname $(which python)))/lib/python*/site-packages/matplotlib/mpl-data/fonts/ttf/
+            bash: mv SimHei.ttf ${$(which python)%bin*}lib/python*/site-packages/matplotlib/mpl-data/fonts/ttf/
             rm -r ~/.cache/matplotlib
         :return:
         '''
